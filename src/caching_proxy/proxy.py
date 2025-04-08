@@ -3,7 +3,7 @@ from urllib.parse import urlparse, urlunparse
 import argparse
 from os import remove
 
-import cache
+from .cache import cache_session_manager
 
 
 routes = web.RouteTableDef()
@@ -13,7 +13,7 @@ DEST_PORT = ""
 
 async def get_back(url: str):
     # url is url of destination
-    async with cache.cache_session_manager(url) as r:
+    async with cache_session_manager(url) as r:
         return r
 
 
