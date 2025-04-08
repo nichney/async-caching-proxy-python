@@ -3,6 +3,8 @@ import json
 from aiohttp import ClientSession, web
 import time
 from multidict import CIMultiDict
+import base64
+import mimetypes
 
 
 def load_cache():
@@ -24,13 +26,15 @@ async def cache_session_manager(url: str):
         current_time = time.time()
         if url in d:
             cached_time, cached_body, cached_status, cached_headers = d[url]
+            decoded_body = base64.b64decode(cached_body)
             if current_time - cached_time < cache_lifetime:
                 headers = CIMultiDict(cached_headers)
+                headers.pop("Content-Encoding", None)
                 headers["X-Cache"] = "HIT"
                 yield web.Response(
-                        body=cached_body.encode("utf-8"),
+                        body=decoded_body,
                         status=cached_status,
-                        headers=headers
+                        headers=headers,
                     )
                 return
             else:
@@ -39,16 +43,24 @@ async def cache_session_manager(url: str):
 
         async with ClientSession() as session:
             async with session.get(url) as resp:
-                body = await resp.text()
+                body = await resp.read()
+                body_b64 = base64.b64encode(body).decode("utf-8")
                 headers = CIMultiDict(resp.headers)
+                
+                headers.pop("Content-Encoding", None)
                 headers["X-Cache"] = "MISS"
-                d[url] = (current_time, body, resp.status, dict(resp.headers))
+                d[url] = (current_time, body_b64, resp.status, dict(resp.headers))
                 save_cache(d)
                 yield web.Response(
-                                body=body.encode("utf-8"),
+                                body=body,
                                 status=resp.status,
-                                headers=headers
+                                headers=headers,
                         )
 
     except Exception as e:
         print(f"Something goes wrong: {e}")
+        yield web.Response(
+            status=502,
+            text=f"Proxy error: {e}",
+            headers={"X-Cache": "ERROR"}
+        )
