@@ -1,10 +1,16 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "aiohttp"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "caching_proxy"
-version = "0.0.1"
+version = "0.0.4"
+
+[project.urls]
+Homepage = "https://github.com/nichney/caching-proxy-python"
+
+[project.scripts]
+caching-proxy = "caching_proxy.proxy:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
