@@ -1,6 +1,7 @@
 from aiohttp import web
 from urllib.parse import urlparse, urlunparse
 import argparse
+from os import remove
 
 import cache
 
@@ -30,14 +31,18 @@ def setup_values(args):
     global DEST_PORT
     ###
     if args.clear_cache:
-        #TODO: add cache clearing
-        pass
+        try:
+            remove("proxy_cache")
+            print("Cache clear now!")
+        except FileNotFoundError:
+            print("Cache already empty!")
+        finally:
+            exit # terminate app
 
     if not args.origin:
         raise ValueError
     DEST_PORT = args.port
     DEST = args.origin
-    print(f"DEST={DEST}, DEST_PORT={DEST_PORT}")
 
 
 def main():
@@ -48,7 +53,7 @@ def main():
                 )
         parser.add_argument("--origin", help="Origin url")
         parser.add_argument("--port", help="Origin port", default="80")
-        parser.add_argument("--clear-cache", help="Clear local cache")
+        parser.add_argument("--clear-cache", action="store_true", help="Clear local cache")
         parser.set_defaults(func=setup_values)
         args = parser.parse_args()
         args.func(args)
@@ -58,6 +63,7 @@ def main():
         web.run_app(app)
     except ValueError:
         print("Oops! It seems like you haven't specify origin")
+        print("Use --help to see usage")
 
 if __name__ == '__main__':
     main()
