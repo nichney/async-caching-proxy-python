@@ -1,21 +1,20 @@
-from aiohttp import web, ClientSession 
+from aiohttp import web
 from urllib.parse import urlparse, urlunparse
 import argparse
+
+import cache
+
 
 routes = web.RouteTableDef()
 DEST = "" 
 DEST_PORT = ""
 
+
 async def get_back(url: str):
     # url is url of destination
-    async with ClientSession() as session:
-        async with session.get(url) as resp:
+    async with cache.cache_session_manager(url) as r:
+        return r
 
-            return web.Response(
-                        body= await resp.read(),
-                        status=resp.status,
-                        headers = resp.headers
-                    )
 
 @routes.get("/{tail:.*}")
 async def forward(request):
@@ -42,20 +41,23 @@ def setup_values(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-                prog='caching-proxy',
-                description="CLI caching proxy server"
-            )
-    parser.add_argument("--origin", help="Origin url")
-    parser.add_argument("--port", help="Origin port", default="80")
-    parser.add_argument("--clear-cache", help="Clear local cache")
-    parser.set_defaults(func=setup_values)
-    args = parser.parse_args()
-    args.func(args)
+    try:
+        parser = argparse.ArgumentParser(
+                    prog='caching-proxy',
+                    description="CLI caching proxy server"
+                )
+        parser.add_argument("--origin", help="Origin url")
+        parser.add_argument("--port", help="Origin port", default="80")
+        parser.add_argument("--clear-cache", help="Clear local cache")
+        parser.set_defaults(func=setup_values)
+        args = parser.parse_args()
+        args.func(args)
 
-    app = web.Application()
-    app.add_routes(routes)
-    web.run_app(app)
+        app = web.Application()
+        app.add_routes(routes)
+        web.run_app(app)
+    except ValueError:
+        print("Oops! It seems like you haven't specify origin")
 
 if __name__ == '__main__':
     main()
