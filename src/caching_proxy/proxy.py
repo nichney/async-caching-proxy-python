@@ -23,7 +23,9 @@ async def forward(request):
     # local_url -> destination_url
     dest_url = urlparse(str(request.url))._replace(netloc=f"{DEST}:{DEST_PORT}")
 
-    return await get_back(dest_url.geturl())
+    async with cache_session_manager(dest_url.geturl()) as r:
+        return r
+
 
 def setup_values(args):
     ### seems bad
