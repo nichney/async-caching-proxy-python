@@ -43,5 +43,43 @@ class TestLoadCache(unittest.TestCase):
         self.assertEqual(result, {})
 
 
+class TestSaveCache(unittest.TestCase):
+
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("json.dump")
+    def test_save_cache_success(self, mock_json_dump, mock_file):
+        cache_data = {"proxy3": "value3", "proxy4": "value4"}
+        save_cache(cache_data)
+        mock_file.assert_called_once_with("proxy_cache", "w")
+        mock_json_dump.assert_called_once_with(cache_data, mock_file.return_value)
+
+    @patch("builtins.open", side_effect=OSError("Permission denied"))
+    @patch("json.dump")
+    def test_save_cache_oserror(self, mock_json_dump, mock_file):
+        cache_data = {"proxy5": "value5"}
+        with self.assertRaises(OSError) as context:
+            save_cache(cache_data)
+        mock_file.assert_called_once_with("proxy_cache", "w")
+        mock_json_dump.assert_not_called()
+        self.assertEqual(str(context.exception), "Permission denied")
+
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("json.dump", side_effect=TypeError("Object of type set is not JSON serializable"))
+    def test_save_cache_typeerror(self, mock_json_dump, mock_file):
+        cache_data = {"proxy6": {1, 2, 3}}  # Non-serializable data
+        with self.assertRaises(TypeError) as context:
+            save_cache(cache_data)
+        mock_file.assert_called_once_with("proxy_cache", "w")
+        mock_json_dump.assert_called_once_with(cache_data, mock_file.return_value)
+        self.assertEqual(str(context.exception), "Object of type set is not JSON serializable")
+
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("json.dump")
+    def test_save_cache_empty_cache(self, mock_json_dump, mock_file):
+        cache_data = {}
+        save_cache(cache_data)
+        mock_file.assert_called_once_with("proxy_cache", "w")
+        mock_json_dump.assert_called_once_with(cache_data, mock_file.return_value)
+
 if __name__ == "__main__":
     unittest.main()
