@@ -2,6 +2,7 @@ from aiohttp import web
 from urllib.parse import urlparse, urlunparse
 import argparse
 from os import remove
+import sys
 
 from .cache import cache_session_manager
 
@@ -39,7 +40,7 @@ def setup_values(args):
         except FileNotFoundError:
             print("Cache already empty!")
         finally:
-            exit # terminate app
+            sys.exit() # terminate app
 
     if not args.origin:
         raise ValueError
