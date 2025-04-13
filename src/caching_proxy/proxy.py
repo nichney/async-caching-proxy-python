@@ -11,13 +11,6 @@ routes = web.RouteTableDef()
 DEST = "" 
 DEST_PORT = ""
 
-
-async def get_back(url: str):
-    # url is url of destination
-    async with cache_session_manager(url) as r:
-        return r
-
-
 @routes.get("/{tail:.*}")
 async def forward(request):
     print(request.url)
